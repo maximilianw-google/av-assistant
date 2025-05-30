@@ -1,0 +1,30 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args: [
+        'build',
+        '-t', '$_ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/backend:latest',
+        '-f', 'Dockerfile',
+        '.'
+    ]
+    dir: 'backend-adk'
+    waitFor: ['-']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-worker'
+    args: [
+        'build',
+        '-t', '$_ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/frontend:latest',
+        '-f', 'Dockerfile',
+        '.'
+    ]
+    dir: 'frontend-mesop' 
+    waitFor: ['-'] 
+
+substitutions:
+  _ARTIFACT_REGISTRY_REGION: 'us-central1'
+  _ARTIFACT_REGISTRY_REPO: 'av-assistant-app'
+
+images:
+  - '$_ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/backend:latest'
+  - '$_ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPO/frontend:latest'
