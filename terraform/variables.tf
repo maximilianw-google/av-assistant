@@ -28,9 +28,27 @@ variable "gemini_api_key" {
   type        = string
 }
 
+variable "tadau_opt_in" {
+  description = "Whether to opt-in to anonymous usage reporting."
+  type        = string
+}
+
 # --- Optional Inputs ---
 variable "service_name_prefix" {
   description = "Name for the Cloud Run service."
   type        = string
   default     = "av-assistant-app"
 }
+
+variable "tadau_api_secret" {
+  description = "GA4 API Secret."
+  type        = string
+  default     = "0"
+}
+
+variable "tadau_measurement_id" {
+  description = "GA4 Measurement ID."
+  type        = string
+  default     = "0"
+}
+

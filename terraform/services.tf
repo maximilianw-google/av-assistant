@@ -89,6 +89,34 @@ resource "google_cloud_run_v2_service" "backend" {
         name  = "GOOGLE_GENAI_USE_VERTEXAI"
         value = "false"
       }
+      env {
+        name = "TADAU_API_SECRET"
+        value = var.tadau_api_secret
+      }
+      env {
+        name = "TADAU_MEASUREMENT_ID"
+        value = var.tadau_measurement_id
+      }
+      env {
+        name = "TADAU_OPT_IN"
+        value = var.tadau_opt_in
+      }
+      env {
+        name = "DEPLOY_CREATED_TIMESTAMP"
+        value = local.deploy_created_time
+      }
+      env {
+        name = "DEPLOY_UPDATED_TIMESTAMP"
+        value = local.deploy_updated_time
+      }
+      env {
+        name = "DEPLOY_ID"
+        value = local.deploy_id
+      }
+      env {
+        name = "DEPLOY_INFRA"
+        value = local.deploy_infra
+      }
     }
   }
 }

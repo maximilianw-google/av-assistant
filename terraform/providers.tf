@@ -18,6 +18,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
+    time = {
+      source = "hashicorp/time"
+      version = "0.13.1"
+    }
   }
   required_version = ">= 1.3"
 
@@ -31,3 +35,4 @@ provider "google" {
   project = var.project_id
   region  = var.region
 }
+

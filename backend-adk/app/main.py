@@ -16,10 +16,12 @@
 
 import time
 import os
-
+import re
 from absl import logging
 
 import fastapi
+import tadau
+import asyncio
 from fastapi import responses
 from google.adk import runners
 from google.adk import sessions
@@ -37,10 +39,16 @@ from app.models import verification_models
 GenerateContentResponse = google.generativeai.types.GenerateContentResponse
 Session = sessions.Session
 JSONResponse = responses.JSONResponse
-
+Tadau = tadau.Tadau
 
 _USER_ID = "av_assistant_user"
-
+_TADAU_FIXED_DIMENSIONS = {
+    "deploy_id": os.environ.get("DEPLOY_ID"),
+    "deploy_infra": os.environ.get("DEPLOY_INFRA"),
+    "deploy_created_time": os.environ.get("DEPLOY_CREATED_TIMESTAMP"),
+    "deploy_updated_time": os.environ.get("DEPLOY_UPDATED_TIMESTAMP"),
+}
+_SPECIAL_CHAR_PATTERN = r"[^a-zA-Z0-9\s]"
 
 logging_client = google.cloud.logging.Client()
 logging_client.setup_logging()
@@ -53,6 +61,13 @@ runner = runners.Runner(
     app_name=app.title,
     session_service=SESSION_SERVICE,
     memory_service=MEMORY_SERVICE,
+)
+
+tadau_client = Tadau(
+    api_secret=os.environ.get("TADAU_API_SECRET"),
+    measurement_id=os.environ.get("TADAU_MEASUREMENT_ID"),
+    opt_in=os.environ.get("TADAU_OPT_IN", "false").lower() == "true",
+    fixed_dimensions=_TADAU_FIXED_DIMENSIONS,
 )
 
 
@@ -96,6 +111,14 @@ async def run_analysis_endpoint(
   """
   logging.info("Received Session ID: %s", session_id)
   managed_session = await get_managed_session(session_id=session_id)
+  await asyncio.to_thread(
+      tadau_client.send_events,
+      events=[{
+          "client_id": str(managed_session.id),
+          "name": "run_analysis_started",
+          "documents_count": len(documents),
+      }],
+  )
   parsed_data = None
   try:
     parts = []
@@ -140,13 +163,49 @@ async def run_analysis_endpoint(
         "Backend: Running analysis finished in %s seconds.",
         end_time - start_time,
     )
-
     if parsed_data:
+      payload = {
+          "client_id": str(managed_session.id),
+          "name": "run_analysis_ended",
+          "duration": str(round(end_time - start_time, 0)),
+      }
+
+      aspect_statuses = [
+          item.status for item in parsed_data.structured_analysis
+      ]
+      if "Green" in aspect_statuses:
+        payload["overall_status"] = "green"
+      if "Yellow" in aspect_statuses:
+        payload["overall_status"] = "yellow"
+      if "Red" in aspect_statuses:
+        payload["overall_status"] = "red"
+
+      for item in parsed_data.structured_analysis:
+        aspect_clean = (
+            re.sub(_SPECIAL_CHAR_PATTERN, "", item.aspect)
+            .replace(" ", "_")
+            .lower()
+        )
+        payload[aspect_clean] = item.status.lower()
+
+      await asyncio.to_thread(tadau_client.send_events, events=[payload])
       return JSONResponse(content=parsed_data.model_dump())
     else:
+      payload = {
+          "client_id": str(managed_session.id),
+          "name": "run_analysis_failed",
+          "error_msg": "No parsed data",
+      }
+      await asyncio.to_thread(tadau_client.send_events, events=[payload])
       return JSONResponse(status_code=500, content={"error": "No parsed data"})
 
   except ValueError as e:
+    payload = {
+        "client_id": str(managed_session.id),
+        "name": "run_analysis_failed",
+        "error_msg": str(e),
+    }
+    await asyncio.to_thread(tadau_client.send_events, events=[payload])
     return JSONResponse(status_code=500, content={"error": str(e)})
 
 
