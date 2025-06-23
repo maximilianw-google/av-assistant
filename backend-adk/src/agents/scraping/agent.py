@@ -5,7 +5,7 @@ from google.adk.agents import LlmAgent
 
 root_agent = LlmAgent(
     name="Analyst",
-    model=os.environ.get("MODEL", "gemini-2.0-flash"),
+    model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
     instruction="""
     You are a detail oriented web analyst. Your job is to create a detailed and comprehensive summary of a web page and its sub pages.
 

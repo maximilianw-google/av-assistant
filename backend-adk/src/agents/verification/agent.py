@@ -247,6 +247,6 @@ root_agent = LlmAgent(
     """),
     output_schema=AnalysisResponse,
     output_key="analysis_results",
-    model=os.environ.get("MODEL", "gemini-2.0-flash"),
+    model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
     before_model_callback=add_available_streetview_images_to_prompt,
 )

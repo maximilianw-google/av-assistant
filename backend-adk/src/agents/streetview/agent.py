@@ -105,7 +105,7 @@ async def save_streetview_image(
 
 
 root_agent = LlmAgent(
-    model=os.environ.get("MODEL", "gemini-2.0-flash"),
+    model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
     name="maps_assistant_agent",
     instruction=(
         "Given basic business information such as the name of the business and"
