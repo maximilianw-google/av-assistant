@@ -52,7 +52,7 @@ class AspectAnalysis(pydantic.BaseModel):
           " document identifiers or links to streetview images (e.g., 'Business"
           " Details: business_name',"
           " 'Document: invoice.pdf', 'Streetview Image:"
-          " https://maps.googleapis.com/maps/api/streetview?size=600x300&location=39.58537099999999%2C-104.8818095&heading=0&pitch=0&key=AIzaSyBNIZIuglrVDApDdKeGWC2u2RYJ8aMfn04)."
+          " https://maps.googleapis.com/maps/api/streetview?size=600x300&location=39.58537099999999%2C-104.8818095&heading=0&pitch=0)."
       ),
   )
 
