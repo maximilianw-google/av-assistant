@@ -43,13 +43,32 @@ def render_review(
         type="headline-6",
         style=me.Style(margin=me.Margin(bottom=16), color="#3c4043"),
     )
+
     _render_detail_row(
         "Business Name:",
         state.business_name if state.business_name else "Not provided",
     )
     _render_detail_row(
+        "Business Website:",
+        state.business_website if state.business_website else "Not provided",
+    )
+    _render_detail_row(
         "Primary Business Address:",
         state.business_address if state.business_address else "Not provided",
+    )
+    _render_detail_row(
+        "Doing business as trade name:",
+        state.business_trade_name
+        if state.business_trade_name
+        else "Not provided",
+    )
+    _render_detail_row(
+        "Business Type:",
+        state.business_type if state.business_type else "Not provided",
+    )
+    _render_detail_row(
+        "Business Sub Type:",
+        state.business_sub_type if state.business_sub_type else "Not provided",
     )
 
     # Mailing Addresses

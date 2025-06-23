@@ -16,7 +16,7 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED True
 
-WORKDIR /backend
+WORKDIR /src
 
 # Copy the service's requirements file
 COPY requirements.txt .
@@ -26,11 +26,10 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy the service's code 
-
 COPY . .
-RUN ls -R
+
 # Expose the service's port
 EXPOSE 8080
 
 # Command to run the service
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -16,8 +16,13 @@
 
 from __future__ import annotations
 
+from absl import logging
+import os
+import requests
 import mesop as me
 from app.state import AppState
+
+business_address_autocomplete_options = []
 
 
 def render_form(state: AppState):
@@ -36,33 +41,74 @@ def render_form(state: AppState):
         " profile.",
         style=me.Style(font_size="0.9em", color="grey"),
     )
-
+    me.radio(
+        key="business_type",
+        on_change=update_business_detail,
+        options=[
+            me.RadioOption(label="Locksmith", value="Locksmith"),
+            me.RadioOption(label="Garage door", value="Garage door"),
+        ],
+        color="accent",
+        value=state.business_type,
+    )
     # Business Name
     me.input(
-        label=(
-            "The full legal name of your business. If your business is an"
-            " LLC operating with a DBA, please provide both names. "
-        ),
+        label="The full legal name of your business.",
         key="business_name",
         value=state.business_name,
         on_blur=update_business_detail,
         style=me.Style(width="100%"),
         required=True,
     )
-
-    me.input(
+    me.autocomplete(
         label="The registered business address",
         key="business_address",
         value=state.business_address,
+        options=get_autocomplete_options(),
+        on_selection_change=update_business_detail,
+        on_enter=update_business_detail,
+        on_input=on_business_address_raw_input,
+        appearance="outline",
+        style=me.Style(width="100%"),
+    )
+    me.input(
+        label="Your business website.",
+        key="business_website",
+        value=state.business_website,
         on_blur=update_business_detail,
         style=me.Style(width="100%"),
         required=True,
     )
+    me.text(
+        text=(
+            " If your business is an LLC operating with a DBA, please provide"
+            " your trade name below."
+        ),
+        style=me.Style(font_size="0.9em", color="grey"),
+    )
+    me.box()
+    me.slide_toggle(
+        label="Doing Business As (DBA)",
+        on_change=on_dba,
+        color="accent",
+    )
+    me.box()
+    if state.doing_business_as:
+      me.input(
+          label="Your business trade name (DBA).",
+          key="business_trade_name",
+          value=state.business_trade_name,
+          on_blur=update_business_detail,
+          style=me.Style(
+              width="100%",
+          ),
+          required=False,
+      )
 
     # Business Address (Street)
     me.text(
         "Any mailing addresses if different than your physical business"
-        " address for which you are applying",
+        " address for which you are applying.",
         style=me.Style(font_size="0.9em", color="grey"),
     )
 
@@ -73,9 +119,8 @@ def render_form(state: AppState):
           value=state.mailing_addresses[count],
           on_blur=update_mailing_addresses,
           style=me.Style(width="100%"),
-          required=True,
+          required=False,
       )
-
     with me.box(
         style=me.Style(
             display="flex",
@@ -92,12 +137,52 @@ def render_form(state: AppState):
           on_click=decrement_mailing_address,
       )
 
+    me.text(
+        "Select your business type from the options below:",
+        style=me.Style(font_size="0.9em", color="grey"),
+    )
+    me.radio(
+        key="business_sub_type",
+        on_change=update_business_detail,
+        options=[
+            me.RadioOption(
+                label="I only service customers at their locations",
+                value="Service Area Business",
+            ),
+            me.RadioOption(
+                label="I only have a branded storefront location",
+                value="Storefront Only",
+            ),
+            me.RadioOption(
+                label=(
+                    "I service customers at their locations, and have a branded"
+                    " storefront"
+                ),
+                value="Hybrid",
+            ),
+            me.RadioOption(
+                label=(
+                    "I do not provide any services; I operate a website and/or"
+                    " call center that recommends local services"
+                ),
+                value="Aggregator",
+            ),
+        ],
+        style=me.Style(display="flex", flex_direction="column"),
+        color="accent",
+        value=state.business_sub_type,
+    )
 
-def update_business_detail(event: me.InputEvent):
+
+def update_business_detail(
+    event: (
+        me.InputEvent
+        | me.AutocompleteEnterEvent
+        | me.AutocompleteSelectionChangeEvent
+    ),
+):
   """Helper function to update a specific business detail."""
-
   state = me.state(AppState)
-  print(state)
   setattr(state, event.key, event.value)
 
 
@@ -123,3 +208,42 @@ def decrement_mailing_address(event: me.ClickEvent):
   state = me.state(AppState)
   state.mailing_addresses_count -= 1
   state.mailing_addresses.pop()
+
+
+def on_dba(event: me.SlideToggleChangeEvent) -> None:
+  state = me.state(AppState)
+  state.doing_business_as = not state.doing_business_as
+
+
+def get_autocomplete_options() -> list[me.AutocompleteOptionGroup]:
+  state = me.state(AppState)
+  if state.business_address_raw_value:
+    headers = {
+        "X-Goog-Api-Key": os.environ.get("GOOGLE_MAPS_API_KEY"),
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "input": state.business_address_raw_value,
+        "includedRegionCodes": ["us"],
+    }
+    response = requests.post(
+        "https://places.googleapis.com/v1/places:autocomplete",
+        json=payload,
+        headers=headers,
+    )
+    result = response.json()
+    options = []
+    for suggestion in result.get("suggestions"):
+      formatted_address = suggestion["placePrediction"]["text"]["text"]
+      options.append(
+          me.AutocompleteOption(
+              label=formatted_address,
+              value=formatted_address,
+          )
+      )
+    return options
+
+
+def on_business_address_raw_input(event: me.InputEvent):
+  state = me.state(AppState)
+  state.business_address_raw_value = event.value

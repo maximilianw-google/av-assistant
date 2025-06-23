@@ -30,7 +30,17 @@ class AppState:
   session_id: str = ""
   current_step: int = 1
   business_name: str = ""
+  business_website: str = ""
+  doing_business_as: bool = False
+  business_trade_name: str = ""
+  business_type: str = "Garage door"
+  business_sub_type: str = "Service Area Business"
   business_address: str = ""
+  business_address_raw_value: str
+  business_address_autocomplete_options: list[me.AutocompleteOption] = field(
+      default_factory=list
+  )
+
   mailing_addresses: list[str] = field(default_factory=lambda: [""])
   mailing_addresses_count: int = 0
 

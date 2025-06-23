@@ -23,3 +23,9 @@ google-cloud-logging==3.11.3
 pydantic==2.11.4
 google-generativeai==0.8.5
 tadau==1.0.8
+bs4==0.0.2
+google-streetview==1.2.9
+Deprecated==1.2.18
+aiohttp==3.12.13
+python-dotenv==1.1.0
+googlemaps==4.10.0

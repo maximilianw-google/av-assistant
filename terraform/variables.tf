@@ -33,6 +33,16 @@ variable "tadau_opt_in" {
   type        = string
 }
 
+variable "gemini_model" {
+  description = "The Gemini Model to use."
+  type        = string
+}
+
+variable "google_maps_api_key" {
+  description = "The API Key for Google Maps."
+  type        = string
+}
+
 # --- Optional Inputs ---
 variable "service_name_prefix" {
   description = "Name for the Cloud Run service."

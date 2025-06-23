@@ -45,6 +45,10 @@ resource "google_cloud_run_v2_service" "frontend" {
         name  = "BACKEND_URL"
         value = google_cloud_run_v2_service.backend.uri
       }
+      env {
+        name  = "GOOGLE_MAPS_API_KEY"
+        value = var.google_maps_api_key
+      }
     }
   }
 }
@@ -82,12 +86,20 @@ resource "google_cloud_run_v2_service" "backend" {
         value = var.region
       }
       env {
+        name  = "GOOGLE_MAPS_API_KEY"
+        value = var.google_maps_api_key
+      }
+      env {
         name  = "GOOGLE_API_KEY"
         value = var.gemini_api_key
       }
       env {
         name  = "GOOGLE_GENAI_USE_VERTEXAI"
         value = "false"
+      }
+      env {
+        name  = "GEMINI_MODEL"
+        value = var.gemini_model
       }
       env {
         name = "TADAU_API_SECRET"

@@ -15,8 +15,11 @@
 """Renders the document uploader components."""
 
 from __future__ import annotations
+import os
 
+from absl import logging
 import mesop as me
+import requests
 from app.state import AppState
 
 _ACCEPTED_FILE_MIME_TYPES = [
@@ -26,10 +29,58 @@ _ACCEPTED_FILE_MIME_TYPES = [
     "application/pdf",
 ]
 
+_LICENSE_REQUIREMENTS = {
+    "Garage door": [
+        "AK",
+        "AZ",
+        "CA",
+        "CT",
+        "DC",
+        "IA",
+        "MD",
+        "MN",
+        "MT",
+        "NE",
+        "NV",
+        "NJ",
+        "NJ",
+        "NM",
+        "ND",
+        "OR",
+        "PA",
+        "SC",
+        "UT",
+        "VA",
+        "WA",
+    ],
+    "Locksmith": [
+        "AL",
+        "CA",
+        "CT",
+        "IL",
+        "LA",
+        "MD",
+        "NJ",
+        "NC",
+        "OK",
+        "OR",
+        "TX",
+        "VA",
+        "WA",
+    ],
+}
+
 
 def render_document_uploader(state: AppState):
   """Renders the document uploader and lists uploaded document files."""
-
+  us_state = validate_address(state.business_address)
+  if us_state in _LICENSE_REQUIREMENTS[state.business_type]:
+    render_uploader_row(
+        "Business License",
+        "Based on the provided business address you are required to provide"
+        " abusiness license. Certain US states require licenses for Locksmiths"
+        " or Garage door services.",
+    )
   render_uploader_row(
       "Business Invoice",
       "Attach an image of a branded receipt you would provide to a customer."
@@ -98,7 +149,7 @@ def render_document_uploader(state: AppState):
   )
   me.text(
       "Attach 2 separate images of Tools & Equipment that you use to"
-      " cpomplete typical jobs, next to your business car or branded invoice."
+      " complete typical jobs, next to your business car or branded invoice."
       " We will disqualify images of tools or equipment that do not also"
       " contain a business card or branded invoice."
   )
@@ -110,7 +161,7 @@ def render_document_uploader(state: AppState):
       " and one other tool.",
   )
   render_uploader_row(
-      "Tools & Equipment (1/2)",
+      "Tools & Equipment (2/2)",
       "Common tools such as power drills, hammers, and"
       " similar hand tools DO NOT meet our requirements. If you are a"
       " full-service locksmith, you are required to provide a lock pick set"
@@ -193,3 +244,36 @@ def handle_document_upload(event: me.UploadEvent):
 def remove_document(file_index_to_remove: int):
   state = me.state(AppState)
   state.uploaded_documents.pop(file_index_to_remove)
+
+
+def validate_address(address_lines: str | list[str], region_code: str = "US"):
+  """Validates an address using the Google Maps Address Validation API.
+
+  Args:
+      address_lines: A list of strings representing the address lines.
+      region_code: The two-letter region code (e.g., "US" for United States).
+
+  Returns:
+      A the US state of the address.
+  """
+  payload = {
+      "address": {"regionCode": region_code, "addressLines": [address_lines]}
+  }
+  api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+  url = f"https://addressvalidation.googleapis.com/v1:validateAddress?key={api_key}"
+  try:
+    response = requests.post(
+        url=url, json=payload, headers={"Content-Type": "application/json"}
+    )
+    response.raise_for_status()
+    result = response.json()
+    return result["result"]["address"]["postalAddress"]["administrativeArea"]
+  except KeyError as e:
+    logging.exception("Error exctracting state from address: %s", e)
+    return None
+  except requests.exceptions.HTTPError as e:
+    logging.exception("Error making request to validate address: %s", e)
+    return None
+  except Exception as e:
+    logging.exception("Error validating address: %s", e)
+    return None

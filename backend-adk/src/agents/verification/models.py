@@ -49,8 +49,10 @@ class AspectAnalysis(pydantic.BaseModel):
       ...,
       description=(
           "A list of strings referencing specific business details keys or"
-          " document identifiers (e.g., 'Business Details: business_name',"
-          " 'Document: invoice.pdf')."
+          " document identifiers or links to streetview images (e.g., 'Business"
+          " Details: business_name',"
+          " 'Document: invoice.pdf', 'Streetview Image:"
+          " https://maps.googleapis.com/maps/api/streetview?size=600x300&location=39.58537099999999%2C-104.8818095&heading=0&pitch=0&key=AIzaSyBNIZIuglrVDApDdKeGWC2u2RYJ8aMfn04)."
       ),
   )
 

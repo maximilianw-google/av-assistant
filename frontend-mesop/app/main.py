@@ -38,7 +38,9 @@ import pydantic
 
 from app.state import AppState
 import uvicorn
+from dotenv import load_dotenv, find_dotenv
 
+load_dotenv(find_dotenv())
 
 BaseModel = pydantic.BaseModel
 RedirectResponse = responses.RedirectResponse
@@ -104,7 +106,12 @@ async def on_submit_data(event: me.ClickEvent):
   try:
     business_details = {
         "business_name": state.business_name,
+        "business_website": state.business_website,
         "business_address": state.business_address,
+        "doing_business_as": str(state.doing_business_as),
+        "business_trade_name": state.business_trade_name,
+        "business_type": state.business_type,
+        "business_sub_type": state.business_sub_type,
         "mailing_addresses": state.mailing_addresses,
         "mailing_addresses_count": state.mailing_addresses_count,
     }
@@ -176,7 +183,11 @@ def page():
       me.button(
           "Next to Document Upload",
           on_click=on_next_step,
-          disabled=not state.business_name,
+          disabled=(
+              not state.business_name
+              or not state.business_address
+              or not state.business_website
+          ),
       )
 
     # Step 2: Upload Documents
