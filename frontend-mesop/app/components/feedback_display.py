@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 from typing import Any
+from app.common import utils
 
 import mesop as me
 
@@ -172,6 +173,7 @@ def render_aspect_item(item_data: dict[str, Any]):
   status = item_data.get("status", "UNKNOWN")
   justification = item_data.get("justification", "No justification provided.")
   evidence_references = item_data.get("evidence_references", [])
+  evidence_image_links = item_data.get("evidence_image_links", [])
 
   icon_color = "#5f6368"
   item_icon = "rule"
@@ -255,5 +257,27 @@ def render_aspect_item(item_data: dict[str, Any]):
                   font_size="0.85em",
                   color="#3c4043",
                   margin=me.Margin(bottom=2),
+              ),
+          )
+
+    if evidence_image_links:
+      with me.box(
+          style=me.Style(
+              margin=me.Margin(
+                  left=44, bottom=10 if evidence_references else 0
+              ),
+              display="flex",
+              flex_direction="row",
+              gap=5,
+          ),
+      ):
+        for idx, link in enumerate(evidence_image_links[:4]):
+          me.image(
+              src=link,
+              alt=f"StreetView ({idx+1})",
+              style=me.Style(
+                  height="100px",
+                  margin=me.Margin(top=1),
+                  border_radius="10px",
               ),
           )

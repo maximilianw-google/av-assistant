@@ -108,13 +108,13 @@ root_agent = LlmAgent(
     model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
     name="maps_assistant_agent",
     instruction=(
-        "Given basic business information such as the name of the business and"
-        " an address, use the `geocode_address` tool to get the coordinates"
-        " (latlong). With those coordinates use the `get_streetview_image` tool"
-        " to get images of the address with multiple headings and pitches.  Do"
-        " NOT ask for user input on headings and pitches, instead come up with"
-        " those on your own. Please add the links as a list of strings in the"
-        " format: ['link1', 'link2', ...] in the state key 'street_view_links'."
+        "Given the address of a business from `Business Details` JSON, use the"
+        " `geocode_address` tool to get the coordinates (latlong). With those"
+        " coordinates use the `get_streetview_image` tool to get images of the"
+        " address with multiple headings and pitches. Do NOT ask for user"
+        " input on headings and pitches, instead come up with those on your"
+        " own. Add the links as a list of strings in the format: ['link1',"
+        " 'link2', ...] in the state key 'street_view_links'."
     ),
     tools=[
         geocode_address,

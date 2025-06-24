@@ -37,8 +37,7 @@ def render_form(state: AppState):
       )
   ):
     me.text(
-        "Please enter your business details as they should appear in your"
-        " profile.",
+        "Please select your business type from the options below.",
         style=me.Style(font_size="0.9em", color="grey"),
     )
     me.radio(
@@ -50,6 +49,11 @@ def render_form(state: AppState):
         ],
         color="accent",
         value=state.business_type,
+    )
+    me.text(
+        "Please enter your business details as they should appear in your"
+        " profile.",
+        style=me.Style(font_size="0.9em", color="grey"),
     )
     # Business Name
     me.input(

@@ -239,7 +239,8 @@ root_agent = LlmAgent(
             c.  Compare and apply RYG criteria.
             d.  Determine `status`.
             e.  Compose `justification`.
-            f.  Compile `evidence_references`, include links/values from state key 'street_view_links' if relevant.
+            f.  Compile `evidence_references`. Do NOT include filenames or links for streetview images, instead use `evidence_image_links` and simply state 'Streetview Imagery" in `evidence_references`.
+            g.  Include links/values from state key 'street_view_links' in `evidence_image_links` if relevant.
         6.  Construct the final response strictly conforming to the `AnalysisResponse` output schema. No extra text.
                  
         **Watchouts**

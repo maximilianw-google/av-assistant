@@ -35,6 +35,7 @@ from fastapi.middleware import wsgi
 import google.cloud.logging
 import mesop as me
 import pydantic
+import requests
 
 from app.state import AppState
 import uvicorn

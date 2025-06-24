@@ -10,6 +10,7 @@ from google.genai import types
 
 from src.agents.verification import models
 
+
 _SPECIAL_CHAR_PATTERN = r"[^a-zA-Z0-9\s]"
 
 
@@ -37,9 +38,7 @@ class Analyzer:
     self.last_duration = None
     self.parsed_data = None
 
-  async def analyze(
-      self,
-  ) -> None:
+  async def analyze(self) -> None:
     """Runs the analysis and stores results in `self.parsed_data`."""
     parts = []
     for doc_file in self.documents:

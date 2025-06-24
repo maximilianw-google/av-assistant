@@ -30,6 +30,7 @@ _BACKEND_URL = os.environ.get(  # Or your deployed Cloud Run URL
     "BACKEND_URL", "http://localhost:8008"
 )
 _RUN_ANALYSIS_ENDPOINT = f"{_BACKEND_URL}/run_analysis"
+_GET_STATUS_ENDPOINT = f"{_BACKEND_URL}/status"
 
 
 def _get_id_token(audience: str) -> str:

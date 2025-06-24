@@ -85,7 +85,7 @@ This section would typically include instructions on how to set up and run the p
 6.  Run **Backend (FastAPI/ADK):**
     ```bash
     cd backend-adk
-    uvicorn app.main:app --reload --port 8008
+    uvicorn src.main:app --reload --port 8008
     ```
 7.  Run **Frontend (Mesop):**
     ```bash
