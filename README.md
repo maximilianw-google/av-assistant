@@ -12,7 +12,7 @@ The primary goal is to identify potential issues, inconsistencies, or missing in
 * **Multi-Step Data Submission:** Guides users through providing business details and uploading necessary documents/images.
 * **AI-Powered Analysis:** Utilizes an LLM agent to review submissions against common verification criteria.
 * **Structured Feedback:** Presents analysis results with a high-level summary and detailed, aspect-by-aspect feedback (Green/Yellow/Red status, justification, and evidence).
-* **In-Memory File Processing:** Files are handled in memory for the analysis transaction, from frontend upload to backend processing by the AI agent, without intermediate storage on GCS for this specific workflow.
+* **Secure Cloud Storage for Processing:** Files uploaded for analysis are temporarily stored in Google Cloud Storage (GCS). This storage is fully encrypted at rest and configured with strict access controls to ensure data security and privacy during the analysis workflow. Once the analysis transaction is complete, these temporary files are securely deleted from GCS.
 * **Python-Powered Frontend:** Built with [Mesop](https://google.github.io/mesop/), allowing for UI development purely in Python.
 
 
@@ -39,9 +39,8 @@ The primary goal is to identify potential issues, inconsistencies, or missing in
     * Agent Development Kit (ADK) for LLM agent interaction.
     * Underlying LLM: Google Gemini via the ADK.
 * **Data Handling (for analysis transaction):**
-    * Files are uploaded in the Mesop frontend and their bytes are passed to the backend API.
-    * The backend passes these bytes directly to the LLM agent for in-memory processing.
-    * No intermediate file storage is used during this analysis workflow.
+    * Files are uploaded in the Mesop frontend and their bytes are passed to the backend API for temporary storage.
+    * The backend passes these bytes directly to the LLM agent for processing.
 * **Authentication:**
     * Uses Google Cloud Identity-Aware Proxy (IAP).
 
@@ -73,9 +72,12 @@ This section would typically include instructions on how to set up and run the p
     ```bash
     pip install -r requirements.txt
     ```
-4.  Add your Gemini API key to an environment variable:
+4.  Add your required environment variables:
     ```
     export GOOGLE_API_KEY=<your-api-key>
+    export GOOGLE_GENAI_USE_VERTEXAI='FALSE'
+    export GOOGLE_MAPS_API_KEY=<your-api-key>
+    export GEMINI_MODEL='gemini-2.5-pro'
     ```
 5.  Ensure you are logged into google cloud
     ```
@@ -116,9 +118,17 @@ This section would typically include instructions on how to set up and run the p
     ```bash
     gcloud builds submit --config ./cloudbuild.yaml .
     ```
-5.  Run terraform by providing a backend to store state.
+5.  Navigate to the terraform directory and create your env/<your-env>.tfvars file.
     ```bash
     cd terraform
+    cp env/prod.tfvars env/<your-env>.tfvars
+    vi env/<your.env>.tfvars
+    ```
+6.  Run terraform by providing a backend to store state.
+    ```bash
     terraform init -backend-config="bucket=<your-env-bucket-name>"
     terraform apply -var-file=env/<your-env>.tfvars -auto-approve
     ```
+    > [!NOTE]  
+    > Using a dedicated backend bucket when initializing terraform is
+    > highliy recommended to avoid state conflicts.

@@ -26,7 +26,6 @@ terraform {
   required_version = ">= 1.3"
 
   backend "gcs" {
-    bucket = "maximilianw-experimental-bucket-tfstate"
     prefix = "av-assistant-app"
   }
 }
