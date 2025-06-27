@@ -21,6 +21,8 @@ from absl import logging
 import mesop as me
 import requests
 from app.state import AppState
+from app.services import backend_service
+
 
 _ACCEPTED_FILE_MIME_TYPES = [
     "image/jpeg",
@@ -181,7 +183,7 @@ def render_document_uploader(state: AppState):
         ):
           me.text(f"{file[0]}:", style=me.Style(font_weight="bold"))
           me.icon("description")  # Material icon for document
-          me.text(file[1].name)
+          me.text(file[1])
           with me.content_button(
               on_click=lambda e: remove_document(index),
               key=f"remove_document_{index}",
@@ -197,7 +199,7 @@ def render_uploader_row(title: str, description: str):
   is_uploaded = False
   if state.uploaded_documents:
     for file in state.uploaded_documents:
-      if file[0] == title:
+      if file[0] == title.replace("/", "_"):
         is_uploaded = True
         break
   with me.box(
@@ -213,7 +215,7 @@ def render_uploader_row(title: str, description: str):
     with me.content_uploader(
         accepted_file_types=_ACCEPTED_FILE_MIME_TYPES,
         on_upload=handle_document_upload,
-        key=title,
+        key=title.replace("/", "_"),
         type="flat",
         color="primary",
         # Not implemented, yet. Need to wait for newer mesop version
@@ -238,12 +240,22 @@ def render_uploader_row(title: str, description: str):
 def handle_document_upload(event: me.UploadEvent):
   """Updates the app state with the uploaded document files."""
   state = me.state(AppState)
-  state.uploaded_documents.append((event.key, event.file))
+  response = backend_service.upload_file(
+      document=event.file, file_type=event.key, session_id=state.session_id
+  )
+  if not response.get("error"):
+    state.uploaded_documents.append((event.key, event.file.name))
 
 
 def remove_document(file_index_to_remove: int):
   state = me.state(AppState)
-  state.uploaded_documents.pop(file_index_to_remove)
+  file_to_remove = state.uploaded_documents[file_index_to_remove]
+  response = backend_service.remove_file(
+      file_name=os.path.join(file_to_remove[0], file_to_remove[1]),
+      session_id=state.session_id,
+  )
+  if not response.get("error"):
+    state.uploaded_documents.pop(file_index_to_remove)
 
 
 def validate_address(address_lines: str | list[str], region_code: str = "US"):

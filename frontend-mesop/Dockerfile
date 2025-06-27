@@ -46,3 +46,4 @@ WORKDIR /srv/mesop-app
 EXPOSE 8080
 # Run Mesop through gunicorn. Should be available at localhost:8080
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8080"]

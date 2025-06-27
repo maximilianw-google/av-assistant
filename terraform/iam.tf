@@ -86,6 +86,24 @@ resource "google_project_iam_binding" "run_invoker" {
   ]
 }
 
+resource "google_project_iam_binding" "storage_object_user" {
+  project = var.project_id
+  role    = "roles/storage.objectUser"
+
+  members = [
+    "serviceAccount:${google_service_account.backend_sa.email}",
+  ]
+}
+
+resource "google_storage_bucket_iam_binding" "storage_admin" {
+  bucket = google_storage_bucket.bucket.name
+  role = "roles/storage.admin"
+  members = [
+      "serviceAccount:${google_service_account.backend_sa.email}",
+    ]
+}
+
+
 
 # IAM policy for the Cloud Run services
 resource "google_cloud_run_v2_service_iam_binding" "frontend_run_invoker" {

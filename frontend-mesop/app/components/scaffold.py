@@ -16,9 +16,9 @@
 
 from __future__ import annotations
 import datetime
-import mesop as me
 from app.components import header
 from app.state import AppState
+import mesop as me
 
 APP_STEPS = [
     {"number": 1, "title": "Business Details"},

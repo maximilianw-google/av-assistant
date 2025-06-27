@@ -29,3 +29,5 @@ Deprecated==1.2.18
 aiohttp==3.12.13
 python-dotenv==1.1.0
 googlemaps==4.10.0
+mimetype==0.1.5
+google-cloud-storage==2.19.0

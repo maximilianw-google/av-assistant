@@ -129,6 +129,10 @@ resource "google_cloud_run_v2_service" "backend" {
         name = "DEPLOY_INFRA"
         value = local.deploy_infra
       }
+      env {
+        name = "BUCKET_NAME"
+        value = var.bucket_name
+      }
     }
   }
 }

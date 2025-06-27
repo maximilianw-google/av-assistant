@@ -23,3 +23,5 @@ aiohttp==3.11.10
 google-cloud-logging==3.11.3
 absl-py==2.1.0
 python-dotenv==1.1.0
+fastapi-sessions==0.3.2
+httpx==0.28.1

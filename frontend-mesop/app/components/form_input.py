@@ -22,8 +22,6 @@ import requests
 import mesop as me
 from app.state import AppState
 
-business_address_autocomplete_options = []
-
 
 def render_form(state: AppState):
   """Renders the business details input form."""

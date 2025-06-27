@@ -78,6 +78,7 @@ venv
 venv/
 env.bak/
 venv.bak/
+.DS_Store
 
 # Terraform
 .terraform/

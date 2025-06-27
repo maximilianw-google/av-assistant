@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import uuid
@@ -28,73 +27,90 @@ from app.components import form_input
 from app.components import review
 from app.components import scaffold
 from app.services import backend_service
-
+from app.state import AppState
+from app.state import load_app_state_to_mesop_state
+from app.state import load_mesop_state_to_app_state
+from dotenv import find_dotenv, load_dotenv
 import fastapi
 from fastapi import responses
 from fastapi.middleware import wsgi
+from fastapi_sessions.frontends.implementations import CookieParameters, SessionCookie
 import google.cloud.logging
 import mesop as me
 import pydantic
-import requests
-
-from app.state import AppState
 import uvicorn
-from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 
 BaseModel = pydantic.BaseModel
 RedirectResponse = responses.RedirectResponse
+Response = responses.Response
 WSGIMiddleware = wsgi.WSGIMiddleware
 FastAPI = fastapi.FastAPI
 Request = fastapi.Request
+HTTPException = fastapi.HTTPException
+Depends = fastapi.Depends
 
 logging_client = google.cloud.logging.Client()
 logging_client.setup_logging()
 logging.info("Logging client instantiated.")
 
+_FRONTEND_URL = (  # "https://av-assistant-app-frontend-ofkw6v63ua-uc.a.run.app"
+    "http://localhost:8000"
+)
+
+cookie_params = CookieParameters()
+cookie = SessionCookie(
+    cookie_name="av-session",
+    identifier="general_verifier",
+    auto_error=True,
+    secret_key="23edf8ugj430wedfu543",
+    cookie_params=cookie_params,
+)
+
 app = FastAPI()
 
 
-class UserInfo(BaseModel):
-  email: str | None
-  agent: str | None
-
-
 @app.get("/__/auth/")
-def auth_proxy(request: Request) -> RedirectResponse:
+async def auth_proxy(request: Request) -> RedirectResponse:
+  """Authenticates the user and drops a session cookie if not present."""
   user_agent = request.headers.get("user-agent")
   user_email = request.headers.get("X-Goog-Authenticated-User-Email")
-  app.state.user_info = UserInfo(email=user_email, agent=user_agent)
-  return RedirectResponse(url="/av-assistant")
+  redirect_response = RedirectResponse(url="/av-assistant")
+  try:
+    session_id = cookie(request)
+  except Exception as e:
+    session_id = uuid.uuid4()
+    cookie.attach_to_response(redirect_response, session_id)
+
+  app.state.session_id = str(session_id)
+  app.state.user_email = user_email
+  app.state.user_agent = user_agent
+  return redirect_response
 
 
 @app.get("/")
 def home() -> RedirectResponse:
+  """App entry point redirect."""
   return RedirectResponse(url="/__/auth/")
 
 
-def on_load(event: me.LoadEvent) -> None:
+def on_load(event: me.LoadEvent):
   """On load event."""
   del event  # Unused.
   state = me.state(AppState)
-  state.user_email = app.state.user_info.email if not None else ""
-  state.user_agent = app.state.user_info.agent if not None else ""
+  state.session_id = app.state.session_id if not None else ""
+  state.user_email = app.state.user_email if not None else ""
+  state.user_agent = app.state.user_agent if not None else ""
+  load_app_state_to_mesop_state(app)
   logging.info("AppState on Page Load: %s", state)
-
-
-def get_session_id():
-  """Retrieves the existing user session ID or generates a new one."""
-  state = me.state(AppState)
-  if not state.session_id:
-    state.session_id = str(uuid.uuid4())
-  return state.session_id
 
 
 def on_next_step(event: me.ClickEvent):
   del event  # Unused.
   state = me.state(AppState)
   state.current_step += 1
+  load_mesop_state_to_app_state(app)
 
 
 async def on_submit_data(event: me.ClickEvent):
@@ -114,11 +130,9 @@ async def on_submit_data(event: me.ClickEvent):
         "business_type": state.business_type,
         "business_sub_type": state.business_sub_type,
         "mailing_addresses": state.mailing_addresses,
-        "mailing_addresses_count": state.mailing_addresses_count,
     }
     # Call the backend ADK agent in a separate thread
-    feedback = await asyncio.to_thread(
-        backend_service.trigger_analysis,
+    feedback = await backend_service.trigger_analysis(
         business_details,
         state.uploaded_documents,
         state.session_id,
@@ -146,8 +160,6 @@ async def on_submit_data(event: me.ClickEvent):
 )
 def page():
   """Main App Page."""
-  session_id = get_session_id()
-  logging.info("Frontend: Session ID: %s", session_id)
   state = me.state(AppState)
   with scaffold.page_frame():
     if state.error_message:

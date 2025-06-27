@@ -43,6 +43,13 @@ variable "google_maps_api_key" {
   type        = string
 }
 
+variable "bucket_name" {
+  description = "The name of the Cloud Storage bucket."
+  type        = string
+}
+
+
+
 # --- Optional Inputs ---
 variable "service_name_prefix" {
   description = "Name for the Cloud Run service."

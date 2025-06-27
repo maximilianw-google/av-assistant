@@ -1,21 +1,45 @@
-from typing import Optional, Any
-from absl import logging
+# Copyright 2025 Google LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""This module contains the implementation of the Street View sub agent."""
+
 import os
-import aiohttp
 import time
+from typing import Any, Optional
 
-
-from .tools import get_streetview_image, geocode_address
-
-from google.adk.agents import LlmAgent
-from google.adk.models import LlmResponse
-
-from google.adk.tools.tool_context import ToolContext
-from google.adk.tools.base_tool import BaseTool
-from google.adk.agents.callback_context import CallbackContext
-from google.adk.models import LlmRequest
+from absl import logging
+import aiohttp
+import dotenv
+from google.adk import agents
+from google.adk import models
+from google.adk.agents import callback_context
+from google.adk.tools import base_tool
+from google.adk.tools import tool_context
 from google.genai import types
-from dotenv import load_dotenv, find_dotenv
+
+from .tools import geocode_address
+from .tools import get_streetview_image
+
+
+ToolContext = tool_context.ToolContext
+BaseTool = base_tool.BaseTool
+LlmResponse = models.LlmResponse
+LlmAgent = agents.LlmAgent
+LlmRequest = models.LlmRequest
+CallbackContext = callback_context.CallbackContext
+load_dotenv = dotenv.load_dotenv
+find_dotenv = dotenv.find_dotenv
 
 load_dotenv(find_dotenv())
 
@@ -75,8 +99,19 @@ async def save_streetview_image(
     tool: BaseTool,
     args: dict[str, Any],
     tool_context: ToolContext,
-    tool_response: dict,
+    tool_response: dict[str, Any],
 ) -> Optional[LlmResponse]:
+  """Callback function that saves the streetview image.
+
+  Args:
+    tool: The tool that was called.
+    args: The arguments that were passed to the tool.
+    tool_context: The tool context.
+    tool_response: The response from the tool.
+
+  Returns:
+    The LLM response.
+  """
   agent_name = tool_context.agent_name
   tool_name = tool.name
 
@@ -86,7 +121,6 @@ async def save_streetview_image(
         agent_name,
         tool_name,
     )
-    image_bytes = None
     image_url = tool_response["image_link"]
     async with aiohttp.ClientSession() as session:
       async with session.get(image_url) as response:

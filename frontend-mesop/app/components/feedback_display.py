@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 from typing import Any
-from app.common import utils
 
 import mesop as me
 

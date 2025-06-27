@@ -1,22 +1,32 @@
+# Copyright 2025 Google LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""This module contains the load_image_artifact_tool function."""
+
 from absl import logging
-
-from typing import Optional
-
-from google.adk.agents.callback_context import CallbackContext
-from google.adk.models import LlmRequest
-from google.adk.models import LlmResponse
-from google.adk.tools import FunctionTool
-from google.adk.tools.tool_context import ToolContext
-
+from google.adk import tools
+from google.adk.tools import tool_context
 from google.genai import types
+
+ToolContext = tool_context.ToolContext
+FunctionTool = tools.FunctionTool
 
 
 async def _load_image_artifact_tool(
     tool_context: ToolContext, filename: str
 ) -> types.Part:
-  """
-  Tool to load an image artifact by filename and return it as a types.Part.
-  """
+  """Tool to load an image artifact by filename and return it as a types.Part."""
   logging.info("Tool: Attempting to load artifact: %s", filename)
   try:
     image_part = await tool_context.load_artifact(filename)

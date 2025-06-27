@@ -112,12 +112,10 @@ def render_review(
         style=me.Style(margin=me.Margin(bottom=16), color="#3c4043"),
     )
     if state.uploaded_documents:
-      for doc_type, file_object in state.uploaded_documents:
-        filename = file_object.name if file_object else "No file uploaded"
+      for doc_type, filename in state.uploaded_documents:
         _render_document_row(
             doc_type,
             filename,
-            file_is_present=bool(file_object and file_object.name),
         )
     else:
       me.text(
@@ -152,9 +150,7 @@ def _render_detail_row(label: str, value: str) -> None:
     me.text(value, style=me.Style(color="#5f6368", flex_grow=1))
 
 
-def _render_document_row(
-    doc_type: str, filename: str, file_is_present: bool
-) -> None:
+def _render_document_row(doc_type: str, filename: str) -> None:
   """Helper function for rendering each document row."""
   with me.box(
       style=me.Style(
@@ -164,10 +160,10 @@ def _render_document_row(
           padding=me.Padding.symmetric(vertical=10),
       )
   ):
-    icon_name = "attach_file" if file_is_present else "do_not_disturb_on"
-    icon_color = "#4285f4" if file_is_present else "#bdbdbd"
-    filename_color = "#5f6368" if file_is_present else "#9e9e9e"
-    filename_style = "normal" if file_is_present else "italic"
+    icon_name = "attach_file"  # if file_is_present else "do_not_disturb_on"
+    icon_color = "#4285f4"  # if file_is_present else "#bdbdbd"
+    filename_color = "#5f6368"  # if file_is_present else "#9e9e9e"
+    filename_style = "normal"  # if file_is_present else "italic"
 
     me.icon(icon_name, style=me.Style(color=icon_color, font_size="1.3em"))
     me.text(

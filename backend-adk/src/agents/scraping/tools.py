@@ -1,13 +1,31 @@
+# Copyright 2025 Google LLC.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Scrapes the text content and same-domain links from a given website URL."""
+
 import re
+from urllib import parse
+import bs4
 import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse
-from urllib.parse import urljoin
+
+BeautifulSoup = bs4.BeautifulSoup
+urlparse = parse.urlparse
+urljoin = parse.urljoin
 
 
 def scrape_website_content_and_links(url: str) -> dict[str, str]:
-  """
-  Scrapes the text content and same-domain links from a given website URL.
+  """Scrapes the text content and same-domain links from a given website URL.
 
   Args:
       url: The URL of the website to scrape.
