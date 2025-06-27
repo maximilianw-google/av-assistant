@@ -74,10 +74,11 @@ This section would typically include instructions on how to set up and run the p
     ```
 4.  Add your required environment variables:
     ```
-    export GOOGLE_API_KEY=<your-api-key>
+    export GOOGLE_API_KEY='<your-api-key>'
     export GOOGLE_GENAI_USE_VERTEXAI='FALSE'
-    export GOOGLE_MAPS_API_KEY=<your-api-key>
+    export GOOGLE_MAPS_API_KEY='<your-api-key>'
     export GEMINI_MODEL='gemini-2.5-pro'
+    export BUCKET_NAME='<your-google-cloud-storage-bucket>
     ```
 5.  Ensure you are logged into google cloud
     ```

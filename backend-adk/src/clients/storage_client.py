@@ -20,8 +20,6 @@ import os
 
 from absl import logging
 import google.auth
-from google.auth import compute_engine
-from google.auth.transport import requests
 from google.cloud import storage
 
 
@@ -36,13 +34,6 @@ class StorageClient:
     """Instantiates the StorageClient."""
     credentials, project = google.auth.default()
     self._client = storage.Client(project=project, credentials=credentials)
-    auth_request = requests.Request()
-    credentials.refresh(request=auth_request)
-    self._signing_credentials = compute_engine.IDTokenCredentials(
-        auth_request,
-        "",
-        service_account_email=credentials.service_account_email,
-    )
     logging.info("StorageClient: Instantiated.")
 
   def remove(self, bucket_name: str, sub_dir: str, file_name: str):

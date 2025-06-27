@@ -28,9 +28,11 @@ from app.components import review
 from app.components import scaffold
 from app.services import backend_service
 from app.state import AppState
-from app.state import load_app_state_to_mesop_state
-from app.state import load_mesop_state_to_app_state
-from dotenv import find_dotenv, load_dotenv
+from app.state import load_backend_to_mesop_state
+from app.state import load_mesop_state_to_backend
+from app.state import session_backend
+from app.state import SessionData
+import dotenv
 import fastapi
 from fastapi import responses
 from fastapi.middleware import wsgi
@@ -39,6 +41,9 @@ import google.cloud.logging
 import mesop as me
 import pydantic
 import uvicorn
+
+load_dotenv = dotenv.load_dotenv
+find_dotenv = dotenv.find_dotenv
 
 load_dotenv(find_dotenv())
 
@@ -55,9 +60,6 @@ logging_client = google.cloud.logging.Client()
 logging_client.setup_logging()
 logging.info("Logging client instantiated.")
 
-_FRONTEND_URL = (  # "https://av-assistant-app-frontend-ofkw6v63ua-uc.a.run.app"
-    "http://localhost:8000"
-)
 
 cookie_params = CookieParameters()
 cookie = SessionCookie(
@@ -71,21 +73,40 @@ cookie = SessionCookie(
 app = FastAPI()
 
 
+async def get_session(session_id: uuid.UUID = Depends(cookie)) -> SessionData:
+  data = session_backend.get(session_id)
+  if not data:
+    # This case should ideally not happen if cookie.auto_error=True,
+    # but good for safety. Create a new session data if not found.
+    data = SessionData()
+    session_backend[session_id] = data
+  return data
+
+
 @app.get("/__/auth/")
-async def auth_proxy(request: Request) -> RedirectResponse:
+async def auth_proxy(request: Request, response: Response) -> RedirectResponse:
   """Authenticates the user and drops a session cookie if not present."""
   user_agent = request.headers.get("user-agent")
   user_email = request.headers.get("X-Goog-Authenticated-User-Email")
-  redirect_response = RedirectResponse(url="/av-assistant")
+
   try:
     session_id = cookie(request)
+    session_id_str = str(session_id)
+    session_data = session_backend.get(session_id_str)
+    if not session_data:
+      print("Session ID exists but no data in backend (e.g., server restart)")
+      session_data = SessionData(user_email=user_email, user_agent=user_agent)
+      session_backend[session_id_str] = session_data
+    print("Found Existing")
   except Exception as e:
     session_id = uuid.uuid4()
-    cookie.attach_to_response(redirect_response, session_id)
+    session_data = SessionData(user_email=user_email, user_agent=user_agent)
+    session_backend[session_id] = session_data
+    cookie.attach_to_response(response, session_id)
 
-  app.state.session_id = str(session_id)
-  app.state.user_email = user_email
-  app.state.user_agent = user_agent
+  redirect_response = RedirectResponse(
+      url=f"/av-assistant?session_id={str(session_id)}"
+  )
   return redirect_response
 
 
@@ -98,11 +119,15 @@ def home() -> RedirectResponse:
 def on_load(event: me.LoadEvent):
   """On load event."""
   del event  # Unused.
+  session_id = me.query_params["session_id"]
+  session_data = session_backend.get(session_id)
+  print(session_data)
+  load_backend_to_mesop_state(session_data)
   state = me.state(AppState)
-  state.session_id = app.state.session_id if not None else ""
-  state.user_email = app.state.user_email if not None else ""
-  state.user_agent = app.state.user_agent if not None else ""
-  load_app_state_to_mesop_state(app)
+  state.session_id = session_id
+  state.uploaded_documents = backend_service.get_existing_files(
+      state.session_id
+  )
   logging.info("AppState on Page Load: %s", state)
 
 
@@ -110,7 +135,8 @@ def on_next_step(event: me.ClickEvent):
   del event  # Unused.
   state = me.state(AppState)
   state.current_step += 1
-  load_mesop_state_to_app_state(app)
+  backend = session_backend.get(state.session_id)
+  load_mesop_state_to_backend(backend)
 
 
 async def on_submit_data(event: me.ClickEvent):
@@ -139,6 +165,8 @@ async def on_submit_data(event: me.ClickEvent):
     )
     state.analysis_feedback = json.dumps(feedback)
     state.current_step = 4
+    backend = session_backend.get(state.session_id)
+    load_mesop_state_to_backend(backend)
   except Exception as err:  # pylint: disable=broad-exception-caught
     state.error_message = f"Analysis failed: {err}"
     # Move to an error display.

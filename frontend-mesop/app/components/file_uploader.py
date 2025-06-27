@@ -171,35 +171,34 @@ def render_document_uploader(state: AppState):
   )
   if state.uploaded_documents:
     me.text("Uploaded Documents:", type="subtitle-2")
-    for index, file in enumerate(state.uploaded_documents):
-      if file:  # me.UploadedFile can be None if a file was removed
-        with me.box(
-            style=me.Style(
-                display="flex",
-                align_items="center",
-                gap=5,
-                margin=me.Margin(top=5),
-            )
+    for file_type, file_name in state.uploaded_documents:
+      with me.box(
+          style=me.Style(
+              display="flex",
+              align_items="center",
+              gap=5,
+              margin=me.Margin(top=5),
+          )
+      ):
+        me.text(f"{file_type}:", style=me.Style(font_weight="bold"))
+        me.icon("description")  # Material icon for document
+        me.text(file_name)
+        with me.content_button(
+            on_click=lambda e: remove_document(e),
+            key=f"remove_{file_type}",
         ):
-          me.text(f"{file[0]}:", style=me.Style(font_weight="bold"))
-          me.icon("description")  # Material icon for document
-          me.text(file[1])
-          with me.content_button(
-              on_click=lambda e: remove_document(index),
-              key=f"remove_document_{index}",
-          ):
-            me.icon(
-                "delete",
-                style=me.Style(color="red", cursor="pointer"),
-            )
+          me.icon(
+              "delete",
+              style=me.Style(color="red", cursor="pointer"),
+          )
 
 
 def render_uploader_row(title: str, description: str):
   state = me.state(AppState)
   is_uploaded = False
   if state.uploaded_documents:
-    for file in state.uploaded_documents:
-      if file[0] == title.replace("/", "_"):
+    for file_type, _ in state.uploaded_documents:
+      if file_type == title.replace("/", "_"):
         is_uploaded = True
         break
   with me.box(
@@ -237,21 +236,32 @@ def render_uploader_row(title: str, description: str):
       )
 
 
-def handle_document_upload(event: me.UploadEvent):
+async def handle_document_upload(event: me.UploadEvent):
   """Updates the app state with the uploaded document files."""
   state = me.state(AppState)
-  response = backend_service.upload_file(
+  response = await backend_service.upload_file(
       document=event.file, file_type=event.key, session_id=state.session_id
   )
   if not response.get("error"):
     state.uploaded_documents.append((event.key, event.file.name))
 
 
-def remove_document(file_index_to_remove: int):
+async def remove_document(e: me.ClickEvent):
+  file_type_to_remove = e.key.replace("remove_", "")
   state = me.state(AppState)
+  file_index_to_remove = None
+  index = 0
+  for file_type, _ in state.uploaded_documents:
+    if not file_index_to_remove:
+      if file_type == file_type_to_remove:
+        file_index_to_remove = index
+      else:
+        index += 1
+
   file_to_remove = state.uploaded_documents[file_index_to_remove]
-  response = backend_service.remove_file(
-      file_name=os.path.join(file_to_remove[0], file_to_remove[1]),
+  response = await backend_service.remove_file(
+      file_type=file_to_remove[0],
+      file_name=file_to_remove[1],
       session_id=state.session_id,
   )
   if not response.get("error"):

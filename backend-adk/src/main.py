@@ -176,9 +176,7 @@ async def upload_document(
       A JSON response with the upload status.
   """
   logging.info(
-      "Received request for /upload_document: %s, %s, %s, %s",
-      contents,
-      mime_type,
+      "Received request for /upload_document: %s, %s",
       file_name,
       sub_dir,
   )

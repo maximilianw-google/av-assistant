@@ -16,13 +16,13 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 from typing import Any
-import base64
-import aiohttp
 
 from absl import logging
+import aiohttp
 import google.auth.transport.requests
 import google.oauth2.id_token
 import mesop as me
@@ -34,6 +34,7 @@ _BACKEND_URL = os.environ.get(  # Or your deployed Cloud Run URL
 _RUN_ANALYSIS_ENDPOINT = f"{_BACKEND_URL}/run_analysis"
 _UPLOAD_ENDPOINT = f"{_BACKEND_URL}/upload_document"
 _REMOVE_ENDPOINT = f"{_BACKEND_URL}/remove_document"
+_CACHED_FILES_ENDPOINT = f"{_BACKEND_URL}/session_info"
 
 
 def _get_id_token(audience: str) -> str:
@@ -222,7 +223,7 @@ async def trigger_analysis(
   return response
 
 
-def remove_file(
+async def remove_file(
     file_type: str, file_name: str, session_id: str
 ) -> dict[str, Any]:
   """Removes a file from the backend.
@@ -235,29 +236,50 @@ def remove_file(
       "file_name": f"{file_type}/{file_name}",
       "sub_dir": session_id,
   }
-  response = _make_backend_request(
+  response = await _make_backend_request_async(
       session_id=session_id, url=_REMOVE_ENDPOINT, data=payload_data
   )
   return response
 
 
-def upload_file(
+async def upload_file(
     document: me.UploadedFile, file_type: str, session_id: str
 ) -> dict[str, Any]:
   """Uploads a document to the backend.
 
   Args:
     document: The document to upload.
+    file_type: The type of the file.
     session_id: The session ID for the current user.
+
+  Returns:
+    A dictionary containing the response from the backend.
   """
-  file_type_clean = file_type.replace("/", "_")
   payload_data = {
       "contents": base64.b64encode(document.getvalue()).decode("utf-8"),
       "mime_type": document.mime_type,
       "file_name": f"{file_type}/{document.name}",
       "sub_dir": session_id,
   }
-  response = _make_backend_request(
+  response = await _make_backend_request_async(
       session_id=session_id, url=_UPLOAD_ENDPOINT, data=payload_data
   )
   return response
+
+
+def get_existing_files(session_id: str) -> list[tuple[str, str]]:
+  """Gets the existing files for the given session ID.
+
+  Args:
+    session_id: The session ID for the current user.
+
+  Returns:
+    A list of tuples, where each tuple represents a file (file_type,
+    filename).
+  """
+  response = requests.get(
+      url=f"{_CACHED_FILES_ENDPOINT}/{session_id}",
+      headers=_get_headers(session_id),
+  )
+  files = json.loads(response.json())
+  return [tuple(file) for file in files]

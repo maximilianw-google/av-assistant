@@ -27,6 +27,7 @@ field = dataclasses.field
 
 BaseModel = pydantic.BaseModel
 
+session_backend = {}
 
 @me.stateclass
 class AppState:
@@ -53,16 +54,31 @@ class AppState:
   user_agent: str = ""
 
 
-def load_mesop_state_to_app_state(app: fastapi.FastAPI) -> None:
+class SessionData(BaseModel):
+  user_email: str | None = None
+  user_agent: str | None = None
+  business_name: str | None = None
+  business_website: str | None = None
+  doing_business_as: bool | None = None
+  business_trade_name: str | None = None
+  business_type: str | None = None
+  business_sub_type: str | None = None
+  business_address: str | None = None
+  business_address_raw_value: str | None = None
+  mailing_addresses: list[str] | None = None
+  mailing_addresses_count: int | None = None
+  analysis_feedback: str | None = None
+
+
+def load_mesop_state_to_backend(session_data: SessionData) -> None:
   """Loads Mesop App state to the fast api app state.
 
   Args:
-    app: The FastAPI App instance.
+    session_data: The data associated with the current session backend.
   """
   state = me.state(AppState)
   for key in state.__dict__:
     if key in (
-        "session_id",
         "business_name",
         "business_website",
         "doing_business_as",
@@ -75,17 +91,18 @@ def load_mesop_state_to_app_state(app: fastapi.FastAPI) -> None:
         "mailing_addresses_count",
         "user_email",
         "user_agent",
+        "analysis_feedback",
     ):
-      setattr(app.state, key, state.__getattribute__(key))
+      setattr(session_data, key, state.__getattribute__(key))
 
 
-def load_app_state_to_mesop_state(app: fastapi.FastAPI) -> None:
+def load_backend_to_mesop_state(session_data: SessionData) -> None:
   """Loads the FastAPI app state to the Mesop App state.
 
   Args:
-    app: The FastAPI App instance.
+    session_data: The data associated with the current session backend.
   """
   state = me.state(AppState)
-  app_state = dict(app.state.__dict__.get("_state"))
-  for key in app_state:
-    setattr(state, key, app_state.get(key))
+  for key, value in session_data.model_dump().items():
+    if value:
+      setattr(state, key, value)
