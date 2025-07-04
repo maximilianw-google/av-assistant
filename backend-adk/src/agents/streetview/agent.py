@@ -30,7 +30,7 @@ from google.genai import types
 
 from .tools import geocode_address
 from .tools import get_streetview_image
-
+from .instructions import get_instructions
 
 ToolContext = tool_context.ToolContext
 BaseTool = base_tool.BaseTool
@@ -138,23 +138,22 @@ async def save_streetview_image(
     )
 
 
+generate_content_config = types.GenerateContentConfig(
+    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+        maximum_remote_calls=30
+    )
+)
+
 root_agent = LlmAgent(
     model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
-    name="maps_assistant_agent",
-    instruction=(
-        "Given the address of a business from `Business Details` JSON, use the"
-        " `geocode_address` tool to get the coordinates (latlong). With those"
-        " coordinates use the `get_streetview_image` tool to get images of the"
-        " address with multiple headings and pitches. Do NOT ask for user"
-        " input on headings and pitches, instead come up with those on your"
-        " own. Add the links as a list of strings in the format: ['link1',"
-        " 'link2', ...] in the state key 'street_view_links'."
-    ),
+    name="google_maps_researcher",
+    instruction=get_instructions(),
     tools=[
         geocode_address,
         get_streetview_image,
     ],
     after_tool_callback=save_streetview_image,
-    before_model_callback=rate_limit_callback,
+    # before_model_callback=rate_limit_callback,
     output_key="street_view_links",
+    generate_content_config=generate_content_config,
 )

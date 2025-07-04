@@ -3,6 +3,7 @@
 import os
 import re
 import time
+import asyncio
 
 from absl import logging
 from google.adk import runners
@@ -46,22 +47,36 @@ class Analyzer:
     self.last_duration = None
     self.parsed_data = None
 
-  async def analyze(self) -> None:
-    """Runs the analysis and stores results in `self.parsed_data`."""
-    parts = []
-    for file_type, file_name in self.documents:
-      file_bytes, mime_type = storage_client.download_as_bytes(
-          bucket_name=_BUCKET_NAME,
-          sub_dir=self.managed_session.id,
-          file_name=os.path.join(file_type, file_name),
-      )
-      parts.extend([
-          types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
-          types.Part.from_text(
-              text=f"The preceding file is the '{file_type}'."
-          ),
-      ])
+  async def _download_file_and_save_to_artifacts(
+      self, file_type: str, file_name: str
+  ) -> None:
+    """Downloads the file and saves it to artifacts."""
+    file_bytes, mime_type = await asyncio.to_thread(
+        storage_client.download_as_bytes,
+        bucket_name=_BUCKET_NAME,
+        sub_dir=self.managed_session.id,
+        file_name=os.path.join(file_type, file_name),
+    )
+    await self.runner.artifact_service.save_artifact(
+        app_name=self.runner.app_name,
+        user_id=self.managed_session.user_id,
+        session_id=self.managed_session.id,
+        filename=f"document|{file_type}|{file_name}",
+        artifact=types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+    )
 
+  async def _save_documents_to_artifacts(self) -> None:
+    """Saves the documents to artifacts."""
+    tasks = []
+    for file_type, file_name in self.documents:
+      tasks.append(
+          self._download_file_and_save_to_artifacts(file_type, file_name)
+      )
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+  def _build_prompt(self) -> types.Content:
+    """Builds the prompt."""
+    parts = []
     parts.append(
         types.Part.from_text(
             text=(
@@ -74,15 +89,21 @@ class Analyzer:
         role="user",
         parts=parts,
     )
+    return content
 
-    logging.info("AGENT: Running analysis with content %s", content)
+  async def analyze(self) -> None:
+    """Runs the analysis and stores results in `self.parsed_data`."""
+    await self._save_documents_to_artifacts()
+    new_message = self._build_prompt()
+
+    logging.info("AGENT: Running analysis with content %s", new_message)
     start_time = time.perf_counter()
     async for event in self.runner.run_async(
         session_id=self.managed_session.id,
         user_id=self.managed_session.user_id,
-        new_message=content,
+        new_message=new_message,
     ):
-      if event:
+      if event and event.content:
         if event.content.parts and event.content.parts[0].text:
           try:
             parsed_data = models.AnalysisResponse.model_validate_json(
@@ -92,6 +113,7 @@ class Analyzer:
               self.parsed_data = parsed_data
               break
           except Exception as e:
+            logging.exception(e)
             continue
 
     end_time = time.perf_counter()

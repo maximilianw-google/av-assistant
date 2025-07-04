@@ -101,7 +101,6 @@ async def get_managed_session(
 async def run_analysis_endpoint(
     business_details_json: str = fastapi.Form(...),
     documents_json: str = fastapi.Form(...),
-    # documents: list[fastapi.UploadFile] = fastapi.File([]),
     session_id: str = fastapi.Header(None, alias="Client-Session-ID"),
 ):
   """Runs the analysis.

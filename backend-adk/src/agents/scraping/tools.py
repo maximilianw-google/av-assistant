@@ -53,9 +53,17 @@ def scrape_website_content_and_links(url: str) -> dict[str, str]:
         headers=headers,
     )
     page.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-  except requests.exceptions.RequestException as e:
+  except (
+      requests.exceptions.RequestException,
+      requests.exceptions.HTTPError,
+  ) as e:
     return {
         "text_content": f"Error accessing website: {e}",
+        "same_domain_links": [],
+    }
+  except Exception as e:
+    return {
+        "text_content": f"An unexpected error occurred: {e}",
         "same_domain_links": [],
     }
 

@@ -28,6 +28,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       max_instance_count = 10
     }
     service_account = google_service_account.frontend_sa.email
+    session_affinity = true
     containers {
       image = data.google_artifact_registry_docker_image.frontend.self_link
       resources {

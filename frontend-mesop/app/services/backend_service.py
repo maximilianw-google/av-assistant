@@ -124,6 +124,7 @@ async def _make_backend_request_async(
 
 def _make_backend_request(
     session_id: str,
+    method: str,
     url: str,
     data: dict[str, Any] | None = None,
     timeout: int = 30,
@@ -133,8 +134,9 @@ def _make_backend_request(
     logging.info(
         "Frontend: Making request to backend service at url %s...", url
     )
-    response = requests.post(
-        url,
+    response = requests.request(
+        method=method,
+        url=url,
         data=data,
         headers=headers,
         timeout=timeout,
@@ -184,7 +186,7 @@ def _make_backend_request(
         "overall_status": "ERROR",
     }
   except Exception as e:
-    logging.error("An unexpected error occurred in backend_service: %s", e)
+    logging.exception("An unexpected error occurred in backend_service: %s", e)
     return {
         "error": (
             "An unexpected error occurred while communicating with the backend."
@@ -275,11 +277,15 @@ def get_existing_files(session_id: str) -> list[tuple[str, str]]:
 
   Returns:
     A list of tuples, where each tuple represents a file (file_type,
-    filename).
+    filename). Returns an empty array on failure.
   """
-  response = requests.get(
-      url=f"{_CACHED_FILES_ENDPOINT}/{session_id}",
-      headers=_get_headers(session_id),
-  )
-  files = json.loads(response.json())
-  return [tuple(file) for file in files]
+  try:
+    response = _make_backend_request(
+        session_id=session_id,
+        method="GET",
+        url=f"{_CACHED_FILES_ENDPOINT}/{session_id}",
+    )
+    return [tuple(file) for file in json.loads(response)]
+  except Exception as e:
+    logging.exception(e)
+    return []

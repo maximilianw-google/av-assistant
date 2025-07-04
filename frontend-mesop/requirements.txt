@@ -17,7 +17,7 @@ pyink==24.10.1
 requests==2.32.3
 uvicorn==0.34.0
 google-auth==2.37.0
-fastapi==0.115.6
+fastapi==0.115.14
 google-api-core==2.24.0
 aiohttp==3.11.10
 google-cloud-logging==3.11.3

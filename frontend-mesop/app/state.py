@@ -29,6 +29,7 @@ BaseModel = pydantic.BaseModel
 
 session_backend = {}
 
+
 @me.stateclass
 class AppState:
   """State class for the application."""

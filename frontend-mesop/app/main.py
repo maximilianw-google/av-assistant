@@ -94,14 +94,17 @@ async def auth_proxy(request: Request, response: Response) -> RedirectResponse:
     session_id_str = str(session_id)
     session_data = session_backend.get(session_id_str)
     if not session_data:
-      print("Session ID exists but no data in backend (e.g., server restart)")
+      logging.info(
+          "Session ID exists but no data in backend (e.g., server restart)"
+      )
       session_data = SessionData(user_email=user_email, user_agent=user_agent)
       session_backend[session_id_str] = session_data
-    print("Found Existing")
+    logging.info("Found Existing")
   except Exception as e:
     session_id = uuid.uuid4()
+    session_id_str = str(session_id)
     session_data = SessionData(user_email=user_email, user_agent=user_agent)
-    session_backend[session_id] = session_data
+    session_backend[session_id_str] = session_data
     cookie.attach_to_response(response, session_id)
 
   redirect_response = RedirectResponse(
@@ -121,13 +124,13 @@ def on_load(event: me.LoadEvent):
   del event  # Unused.
   session_id = me.query_params["session_id"]
   session_data = session_backend.get(session_id)
-  print(session_data)
-  load_backend_to_mesop_state(session_data)
+  if session_data:
+    load_backend_to_mesop_state(session_data)
   state = me.state(AppState)
   state.session_id = session_id
-  state.uploaded_documents = backend_service.get_existing_files(
-      state.session_id
-  )
+  existing_files = backend_service.get_existing_files(state.session_id)
+  if existing_files:
+    state.uploaded_documents = existing_files
   logging.info("AppState on Page Load: %s", state)
 
 
